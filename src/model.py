@@ -57,6 +57,8 @@ class Net(pl.LightningModule):
             neg_biggraph = batch['neg_biggraph']
             p_rep = torch.cat([p_rep,pos_biggraph], dim=1)
             n_rep = torch.cat([n_rep,neg_biggraph], dim=1)
+            p_rep = p_rep.float()
+            n_rep= n_rep.float()
 
         # if self.deep_ct: ## TODO
         #     pos_biggraph = batch['pos_deepct']
@@ -80,15 +82,15 @@ class Net(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         batch = self.collate_fn(batch)
-        q_rep,p_rep = self.forward(batch) 
-        loss = self.loss_criteria(q_rep,p_rep)
+        q_rep, p_rep,n_rep = self.forward(batch) 
+        loss = self.loss_criteria(q_rep, p_rep,n_rep)
         self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         batch = self.collate_fn(batch)
-        q_rep,p_rep = self.forward(batch)
-        loss = self.loss_criteria(q_rep,p_rep)
+        q_rep, p_rep,n_rep = self.forward(batch)
+        loss = self.loss_criteria( q_rep, p_rep,n_rep)
         self.log('val_loss', loss)
         return loss
 

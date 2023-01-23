@@ -288,6 +288,7 @@ class DataProcessing():
                 positive_docs = df_sample.loc[df_sample['qrel']>0]
                 negative_docs = df_sample.loc[df_sample['qrel']==0]
                 result = pd.merge(positive_docs, negative_docs, on=['query_id','query_text'])
+                result = result.sample(n =100000)
                 string = \
                 "result.to_parquet('{}fold_{}_{}.parquet.gzip',compression='gzip')".format(self.train_test_directory,i,s)
                 exec(string)

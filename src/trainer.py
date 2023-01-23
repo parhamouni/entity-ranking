@@ -7,9 +7,11 @@ from model import Net
 import warnings
 import logging
 import pdb
+import os
 warnings.filterwarnings("ignore")
 logging.basicConfig(format='%(asctime)s - %(message)s',datefmt='%Y-%m-%d %H:%M:%S',level=logging.INFO)
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+pdb.set_trace()
 
 
 def cli_main():
@@ -47,12 +49,11 @@ def cli_main():
     # ------------
     lr_monitor = LearningRateMonitor(logging_interval='step')
     checkpoint_callback = ModelCheckpoint(monitor = 'val_loss')
-    trainer = pl.Trainer.from_argparse_args(args,
+    trainer = pl.Trainer.from_argparse_args(args, accelerator="auto",
                     callbacks=[lr_monitor,
                     checkpoint_callback,
                     EarlyStopping('val_loss',patience = 5)])
     logging.info('Loading training triplet dataset')
-    pdb.set_trace()
     train_dataset = TripletDataset(filepath = args.training_file_address)
     logging.info('Loading testing triplet dataset')
     val_dataset = TripletDataset(filepath=args.testing_file_address)

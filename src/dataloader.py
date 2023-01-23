@@ -11,7 +11,6 @@ class TripletDataset(Dataset): ## TODO: Add deep_ct
         Args: 
             filepath (string): address of the the query and passage document for training
         """
-        pdb.set_trace()
         self.df = pd.read_parquet(filepath) 
 
     def __len__(self):
