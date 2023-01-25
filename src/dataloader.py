@@ -6,30 +6,28 @@ import numpy as np
 
 class TripletDataset(Dataset): ## TODO: Add deep_ct
     def __init__(self, 
-        filepath):
+        filepath, biggraph = False, deepct = False):
         """
         Args: 
             filepath (string): address of the the query and passage document for training
         """
         self.df = pd.read_parquet(filepath) 
+        self.biggraph = biggraph
+        self.deepct = deepct
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
-        pos_sentence = self.df.iloc[idx].abstract_x
-        query_sentence = self.df.iloc[idx].query_text
-        neg_sentence = self.df.iloc[idx].abstract_y
-        pos_biggraph = self.df.iloc[idx].biggraph_embedding_x
-        neg_biggraph = self.df.iloc[idx].biggraph_embedding_y
-
-        sample = {
-                    'query_sentence': query_sentence,
-                    'pos_sentence': pos_sentence,
-                    'neg_sentence': neg_sentence,
-                    'pos_biggraph': pos_biggraph,
-                    'neg_biggraph': neg_biggraph
-                    }
+        sample = {  'query_sentence': self.df.iloc[idx].query_text,
+                    'pos_sentence': self.df.iloc[idx].abstract_x,
+                    'neg_sentence': self.df.iloc[idx].abstract_y}
+        if self.biggraph:
+            sample['pos_biggraph'] = self.df.iloc[idx].biggraph_embedding_x
+            sample['neg_biggraph'] = self.df.iloc[idx].biggraph_embedding_y
+        if self.deepct:
+            sample['pos_deepct'] = self.df.iloc[idx].deepct_weights_x
+            sample['neg_deepct']  = self.df.iloc[idx].deepct_weights_y
         return sample
 
 if __name__=='__main__':

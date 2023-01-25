@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from sentence_transformers.util import batch_to_device
 from utils import TripletLoss
 from nfnets import SGD_AGC
+import pdb
 
 
 class Net(pl.LightningModule):
@@ -37,7 +38,7 @@ class Net(pl.LightningModule):
         if self.big_graph:
             self.additional_dim +=200 ## dimension of biggraph embeddings
         if deep_ct:
-            self.additional_dim +=200 ## dimension of deepct weights
+            self.additional_dim +=100 ## dimension of deepct weights to be checked
 
         self.linear_p1 = nn.Sequential(
             nn.Linear(self.lm_dim+self.additional_dim, self.lm_dim)
@@ -57,12 +58,14 @@ class Net(pl.LightningModule):
             neg_biggraph = batch['neg_biggraph']
             p_rep = torch.cat([p_rep,pos_biggraph], dim=1)
             n_rep = torch.cat([n_rep,neg_biggraph], dim=1)
-            p_rep = p_rep.float()
-            n_rep= n_rep.float()
+        if self.deep_ct:
+            pos_deepct = batch['pos_deepct']
+            neg_deepct = batch['neg_deepct']
+            p_rep = torch.cat([p_rep,pos_deepct], dim=1)
+            n_rep = torch.cat([n_rep,neg_deepct], dim=1)
 
-        # if self.deep_ct: ## TODO
-        #     pos_biggraph = batch['pos_deepct']
-        #     neg_biggraph = batch['neg_deepct']
+        p_rep = p_rep.float()
+        n_rep= n_rep.float()
         p_rep = F.relu(self.linear_p1(p_rep))
         n_rep = F.relu(self.linear_p1(n_rep))
         p_rep =self.linear_p2(p_rep)
@@ -73,7 +76,7 @@ class Net(pl.LightningModule):
     def collate_fn(self,batch):
         device = 'cuda' if 'cuda' in self.lm_model.device.__str__() else 'cpu'
         for k in batch.keys():
-            if any(item in k for item in ['deepct', 'biggraph']):
+            if any(item in k for item in ['deepct_weights', 'biggraph']):
                 batch[k] = torch.tensor(batch[k]).to(device)
             else:
                 batch[k] = batch_to_device(self.lm_model.tokenize(batch[k]),device)

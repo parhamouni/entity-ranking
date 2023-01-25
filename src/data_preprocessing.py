@@ -242,7 +242,8 @@ class DataProcessing():
             df_wiki2016_merge_biggraph_emb=df_wiki2016_merge.merge(df_biggraph_embedding_entity,on = 'entity', how = 'left')
             df_wiki2016_merge_biggraph_emb.sort_values(by = ['query_index','hit'],inplace=True)
             df_wiki2016_merge_biggraph_emb.reset_index(inplace=True, drop = True)
-            df_wiki2016_merge_biggraph_emb.to_parquet(self.biggraph_entity_subset_path,compression = 'gzip')
+            df_wiki2016_merge_biggraph_emb.to_parquet(self.biggraph_entity_subset_path,
+                                                        compression = 'gzip')
         return df_wiki2016_merge_biggraph_emb
 
 
@@ -275,6 +276,11 @@ class DataProcessing():
         df_wiki2016_merge_biggraph_emb.biggraph_embedding = df_wiki2016_merge_biggraph_emb.biggraph_embedding.fillna(df_wiki2016_merge_biggraph_emb.biggraph_embedding.notna().apply(lambda x: x or ['0.0']*200))
         df_wiki2016_merge_biggraph_emb.biggraph_embedding= df_wiki2016_merge_biggraph_emb.biggraph_embedding.apply(lambda x:list(map(float, x)))
         df_wiki2016_merge_biggraph_emb.biggraph_embedding=df_wiki2016_merge_biggraph_emb.biggraph_embedding.apply(np.array)
+        df_weights, df_tokens = self.deep_ct_process()
+        df_weights.rename(columns={'0':'deepct_weights'},inplace=True)
+        df_tokens.rename(columns={'0':'deepct_tokens'},inplace=True)
+        df_wiki2016_merge_biggraph_emb = df_wiki2016_merge_biggraph_emb.join(df_tokens.join(df_weights))
+        df_wiki2016_merge_biggraph_emb.abstract = df_wiki2016_merge_biggraph_emb.abstract.apply(lambda x:x[1:].split('"@en ')[0])
         for i in tqdm(range(1)):
             string = "training_set_fold_{} = df_wiki2016_merge_biggraph_emb[df_wiki2016_merge_biggraph_emb.query_id.isin(df_folds[df_folds.fold=={}].training.values[0])]".format(i,i)
             exec(string)
@@ -282,13 +288,21 @@ class DataProcessing():
             exec(string)
             for s in ['training','test']:
                 # pdb.set_trace()
-                string = "{}_set_fold_{}[['query_id','query_text','abstract','dbpedia_entity','qrel','biggraph_embedding']]".format(s,i)
+                string = "{}_set_fold_{}[['query_id','query_text','abstract','dbpedia_entity','qrel','biggraph_embedding','deepct_weights','deepct_tokens']]".format(s,i)
                 ## deep_ct to be added
                 df_sample = eval(string)
                 positive_docs = df_sample.loc[df_sample['qrel']>0]
                 negative_docs = df_sample.loc[df_sample['qrel']==0]
+                df_positive_counts = positive_docs.groupby('query_id').query_text.count()
+                negative_dfs = []
+                for query_id, g in negative_docs.groupby('query_id'):
+                    try:
+                        size = df_positive_counts[df_positive_counts.index==query_id].values[0]
+                        negative_dfs.append(g.sample(size))
+                    except:
+                        pass
+                negative_docs=pd.concat(negative_dfs)
                 result = pd.merge(positive_docs, negative_docs, on=['query_id','query_text'])
-                result = result.sample(n =100000)
                 string = \
                 "result.to_parquet('{}fold_{}_{}.parquet.gzip',compression='gzip')".format(self.train_test_directory,i,s)
                 exec(string)
@@ -296,3 +310,4 @@ class DataProcessing():
 if __name__=='__main__':
     dp = DataProcessing()
     dp.triplet_data()
+    # dp.deep_ct_process()
