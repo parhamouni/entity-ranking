@@ -23,7 +23,7 @@ def cli_main():
     parser.add_argument('--biggraph_embedding', action='store_true', default = False  ,help='Use biggraph embeddings')
     parser.add_argument('--deepct', action='store_true', default = False  ,help='Use deepct embeddings and weights')
     parser.add_argument('--transformer_name', type=str, default='microsoft/mpnet-base')
-    parser.add_argument('--num_workers', default=50, type=int,help='num_workers in dataloader')
+    parser.add_argument('--num_workers', default=100, type=int,help='num_workers in dataloader')
     parser.add_argument('--training_file_address', type=str,
                         default="../data/processed/folds/fold_0_training.parquet.gzip",
                         help= "address of the training path")

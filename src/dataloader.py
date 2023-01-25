@@ -26,11 +26,12 @@ class TripletDataset(Dataset): ## TODO: Add deep_ct
             sample['pos_biggraph'] = self.df.iloc[idx].biggraph_embedding_x
             sample['neg_biggraph'] = self.df.iloc[idx].biggraph_embedding_y
         if self.deepct:
-            sample['pos_deepct'] = self.df.iloc[idx].deepct_weights_x
-            sample['neg_deepct']  = self.df.iloc[idx].deepct_weights_y
+            sample['pos_deepct'] = np.nan_to_num(self.df.iloc[idx].deepct_weights_x)
+            sample['neg_deepct']  = np.nan_to_num(self.df.iloc[idx].deepct_weights_y)
         return sample
 
 if __name__=='__main__':
-    data = TripletDataset('../data/processed/folds/fold_0_test.parquet.gzip')
-    print(data[0])
+    data = TripletDataset('../data/processed/folds/fold_0_test.parquet.gzip',biggraph = True, deepct = True)
+    sample = data[0]
+    pdb.set_trace()
 

@@ -76,7 +76,7 @@ class Net(pl.LightningModule):
     def collate_fn(self,batch):
         device = 'cuda' if 'cuda' in self.lm_model.device.__str__() else 'cpu'
         for k in batch.keys():
-            if any(item in k for item in ['deepct_weights', 'biggraph']):
+            if any(item in k for item in ['deepct', 'biggraph']):
                 batch[k] = torch.tensor(batch[k]).to(device)
             else:
                 batch[k] = batch_to_device(self.lm_model.tokenize(batch[k]),device)
