@@ -18,7 +18,7 @@ def cli_main():
     # args
     # ------------
     parser = ArgumentParser(description="Fine-tune variants of siamese encoder architectures")
-    parser.add_argument('--batch_size', default=20, type=int,help='batch_size')
+    parser.add_argument('--batch_size', default=10, type=int,help='batch_size')
     parser.add_argument('--learning_rate', default=0.1, type=float,help='Learning rate')
     parser.add_argument('--biggraph_embedding', action='store_true', default = False  ,help='Use biggraph embeddings')
     parser.add_argument('--deepct', action='store_true', default = False  ,help='Use deepct embeddings and weights')

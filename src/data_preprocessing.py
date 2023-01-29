@@ -40,7 +40,8 @@ class DataProcessing():
                         deepct_weights='../data/processed/deep_ct_weights.parquet.gz',
                         deepct_tokens = '../data/processed/deep_ct_tokens.parquet.gz',
                         fold_address ='/home/parham/entity-ranking/data/DBpedia-Entity/collection/v2/folds/all_queries.json',
-                        train_test_directory =  '../data/processed/folds/'):
+                        train_test_directory =  '../data/processed/folds/',
+                        non_triplet_directory =  '/home/parham/entity-ranking/data/processed/non_triplet_folds/'):
 
         self.df_dbpedia_path = df_dbpedia_path
         self.dbpedia_path = dbpedia_path
@@ -63,6 +64,7 @@ class DataProcessing():
         self.deepct_token = deepct_tokens
         self.fold_address = fold_address
         self.train_test_directory = train_test_directory
+        self.non_triplet_directory = non_triplet_directory
 
     @staticmethod
     def flatten(sample):
@@ -307,7 +309,34 @@ class DataProcessing():
                 "result.to_parquet('{}fold_{}_{}.parquet.gzip',compression='gzip')".format(self.train_test_directory,i,s)
                 exec(string)
 
+
+    def non_triplet_folds(self):
+        df_folds =pd.read_json(self.fold_address)
+        df_folds = df_folds.T
+        df_folds.reset_index(inplace = True)
+        df_folds.rename(columns={'index':'fold'},inplace=True)
+        df_wiki2016_merge_biggraph_emb = self.biggraph_data()
+        df_wiki2016_merge_biggraph_emb.biggraph_embedding = df_wiki2016_merge_biggraph_emb.biggraph_embedding.fillna(df_wiki2016_merge_biggraph_emb.biggraph_embedding.notna().apply(lambda x: x or ['0.0']*200))
+        df_wiki2016_merge_biggraph_emb.biggraph_embedding= df_wiki2016_merge_biggraph_emb.biggraph_embedding.apply(lambda x:list(map(float, x)))
+        df_wiki2016_merge_biggraph_emb.biggraph_embedding=df_wiki2016_merge_biggraph_emb.biggraph_embedding.apply(np.array)
+        df_weights, df_tokens = self.deep_ct_process()
+        df_weights.rename(columns={'0':'deepct_weights'},inplace=True)
+        df_tokens.rename(columns={'0':'deepct_tokens'},inplace=True)
+        df_wiki2016_merge_biggraph_emb = df_wiki2016_merge_biggraph_emb.join(df_tokens.join(df_weights))
+        df_wiki2016_merge_biggraph_emb.abstract = df_wiki2016_merge_biggraph_emb.abstract.apply(lambda x:x[1:].split('"@en ')[0])
+        for i in tqdm(range(5)):
+            string = "training_set_fold_{} = df_wiki2016_merge_biggraph_emb[df_wiki2016_merge_biggraph_emb.query_id.isin(df_folds[df_folds.fold=={}].training.values[0])]".format(i,i)
+            exec(string)
+            string = "training_set_fold_{}.to_parquet('{}training_set_fold_{}.parquet.gzip',compression='gzip')".format(i,self.non_triplet_directory,i)
+            exec(string)
+            string = "test_set_fold_{} = df_wiki2016_merge_biggraph_emb[df_wiki2016_merge_biggraph_emb.query_id.isin(df_folds[df_folds.fold=={}].testing.values[0])]".format(i,i)
+            exec(string)
+            string = "test_set_fold_{}.to_parquet('{}test_set_fold_{}.parquet.gzip',compression='gzip')".format(i,self.non_triplet_directory,i)
+            exec(string)
+
+
+           
 if __name__=='__main__':
     dp = DataProcessing()
-    dp.triplet_data()
-    # dp.deep_ct_process()
+    # dp.triplet_data()
+    dp.non_triplet_folds()

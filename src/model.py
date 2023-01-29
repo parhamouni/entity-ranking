@@ -96,6 +96,26 @@ class Net(pl.LightningModule):
         loss = self.loss_criteria( q_rep, p_rep,n_rep)
         self.log('val_loss', loss)
         return loss
+        
+    def predict_step(self,batch,batch_idx):
+        q_rep =self.lm_model.encode(batch['query_sentence'])
+        q_rep = torch.tensor(q_rep).to(self.lm_model.device.__str__())
+
+        p_rep =self.lm_model.encode(batch['retrieval_sentence'])
+        p_rep = torch.tensor(p_rep).to(self.lm_model.device.__str__())
+
+        if self.big_graph:
+            biggraph_emb = batch['biggraph']
+            p_rep = torch.cat([p_rep,biggraph_emb], dim=1)
+
+        if self.deep_ct:
+            deepct_emb = batch['deepct']
+            p_rep = torch.cat([p_rep,deepct_emb], dim=1)
+
+        p_rep = p_rep.float()
+        p_rep = F.relu(self.linear_p1(p_rep))
+        p_rep =self.linear_p2(p_rep)
+        return q_rep, p_rep
 
 
     def configure_optimizers(self):
